@@ -1,0 +1,4 @@
+subscription_key = '<YOURSUBSCRIPTIONKEY>'
+endpoint = '<YOURENDPOINT>'
+CATALOG = '<YOURCATALOG>'
+ROOTREPLACE={"D:/photos/":"/mnt/photos"}
