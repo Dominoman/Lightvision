@@ -37,16 +37,17 @@ class Image:
     def get_keywords(self) -> List[str]:
         cur = self.catalog.con.cursor()
         param = (self.id,)
-        cur.execute("""select name from AgLibraryKeywordImage,AgLibraryKeyword
-where AgLibraryKeywordImage.tag=AgLibraryKeyword.id_local
-and image=?""", param)
+        cur.execute("""select name from AgLibraryKeywordImage
+left join AgLibraryKeyword on AgLibraryKeywordImage.tag=AgLibraryKeyword.id_local
+where image=?""", param)
         return [row[0] for row in cur]
 
     def has_keyword(self, keyword: str) -> bool:
         cur = self.catalog.con.cursor()
         param = (self.id, keyword)
-        cur.execute("""select count(*) from AgLibraryKeywordImage,AgLibraryKeyword
-where AgLibraryKeywordImage.tag=AgLibraryKeyword.id_local and image=? and name=?""", param)
+        cur.execute("""select count(*) from AgLibraryKeywordImage
+left join AgLibraryKeyword on AgLibraryKeywordImage.tag=AgLibraryKeyword.id_local
+where image=? and name=?""", param)
         result = cur.fetchone()
         return result[0] != 0
 
@@ -66,6 +67,23 @@ where AgLibraryKeywordImage.tag=AgLibraryKeyword.id_local and image=? and name=?
             param = (timestamp, keyword_id)
             cur.execute("update AgLibraryKeyword set lastApplied=? where id_local=?", param)
             cur.connection.commit()
+
+    def remove_keyword(self, keyword: str, remove_if_not_used: bool = False):
+        cur = self.catalog.con.cursor()
+        keyword_id = self.catalog.get_keyword_id(keyword)
+        if keyword_id == -1:
+            return
+        if self.has_keyword(keyword):
+            param = (self.id, keyword_id)
+            cur.execute("delete from AgLibraryKeywordImage where image=? and tag=?", param)
+            cur.connection.commit()
+        if remove_if_not_used:
+            param = (keyword_id,)
+            cur.execute("select count(*) from AgLibraryKeywordImage where tag=?", param)
+            result = cur.fetchone()
+            if result[0] == 0:
+                cur.execute("delete from AgLibraryKeyword where id_local=?", param)
+                cur.connection.commit()
 
 
 class LRCatalog:
@@ -92,10 +110,11 @@ class LRCatalog:
         cur = self.con.cursor()
         param = (image_id,)
         cur.execute("""select Adobe_images.id_local,fileFormat,absolutePath,pathFromRoot,baseName,extension 
-from Adobe_images,AgLibraryFile,AgLibraryFolder,AgLibraryRootFolder
-where Adobe_images.rootFile=AgLibraryFile.id_local and AgLibraryFile.folder=AgLibraryFolder.id_local 
-and AgLibraryFolder.rootFolder=AgLibraryRootFolder.id_local
-and Adobe_images.id_local=?""", param)
+from Adobe_images
+left join AgLibraryFile on Adobe_images.rootFile=AgLibraryFile.id_local 
+left join AgLibraryFolder on AgLibraryFile.folder=AgLibraryFolder.id_local 
+left join AgLibraryRootFolder on AgLibraryFolder.rootFolder=AgLibraryRootFolder.id_local
+where Adobe_images.id_local=?""", param)
         result = cur.fetchone()
         if result is None:
             return Image((-1, "", "", "", "", ""), self)
@@ -104,9 +123,10 @@ and Adobe_images.id_local=?""", param)
     def get_all_image(self) -> Iterable[Image]:
         cur = self.con.cursor()
         for row in cur.execute("""select Adobe_images.id_local,fileFormat,absolutePath,pathFromRoot,baseName,extension 
-from Adobe_images,AgLibraryFile,AgLibraryFolder,AgLibraryRootFolder
-where Adobe_images.rootFile=AgLibraryFile.id_local and AgLibraryFile.folder=AgLibraryFolder.id_local 
-and AgLibraryFolder.rootFolder=AgLibraryRootFolder.id_local"""):
+from Adobe_images
+left join AgLibraryFile on Adobe_images.rootFile=AgLibraryFile.id_local
+left join AgLibraryFolder on AgLibraryFile.folder=AgLibraryFolder.id_local
+left join AgLibraryRootFolder on AgLibraryFolder.rootFolder=AgLibraryRootFolder.id_local"""):
             yield Image(row, self)
 
     def get_keyword_id(self, keyword: str) -> int:
@@ -133,6 +153,11 @@ and AgLibraryFolder.rootFolder=AgLibraryRootFolder.id_local"""):
         cur.execute("insert into AgLibraryKeyword values (?,?,?,?,?,?,?,?,?,?,?,?,?)", param)
         self.con.commit()
         return keyword_id
+
+    def get_keywords(self) -> List[str]:
+        cur = self.con.cursor()
+        cur.execute("select name from AgLibraryKeyword where name!=''")
+        return [row[0] for row in cur]
 
     def get_converted_root_path(self, root_path: str) -> str:
         if root_path in self.root_dictionary:

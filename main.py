@@ -4,7 +4,7 @@ from lrcat import LRCatalog
 from vision import Vision
 
 if __name__ == '__main__':
-    catalog = LRCatalog(config.CATALOG,config.ROOTREPLACE)
+    catalog = LRCatalog(config.CATALOG, config.ALTERNATEROOT)
     vision = Vision(config.endpoint, config.subscription_key)
     for image in catalog.get_all_image():
         if not image.has_keyword("Visioned"):
