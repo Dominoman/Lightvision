@@ -8,4 +8,4 @@ if __name__ == '__main__':
     for image in catalog.get_all_image():
         image.set_caption("")
         for keyword in image.get_keywords():
-            image.remove_keyword(keyword,True)
+            image.remove_keyword(keyword, True)

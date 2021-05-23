@@ -11,10 +11,10 @@ if __name__ == '__main__':
     for image in catalog.get_all_image():
         if not image.has_keyword("Visioned"):
             if image.file_format == "JPG":
-                result = vision.parse_image(image.get_file_path())
+                result = vision.parse_image(image.get_file_path(), True)
             elif image.file_format == "RAW":
-                filename = image.root_path + image.path + image.base_name + ".jpg"
-                result = vision.parse_image(filename)
+                filename = catalog.get_converted_root_path(image.root_path) + image.path + image.base_name + ".jpg"
+                result = vision.parse_image(filename, True)
             else:
                 print(f"Skip file:{image.get_file_path()}")
                 result = None

@@ -4,7 +4,7 @@ import config
 from lrcat import LRCatalog
 
 if __name__ == '__main__':
-    catalog = LRCatalog(config.CATALOG)
+    catalog = LRCatalog(config.CATALOG, config.ALTERNATEROOT)
     print("Keywords:")
     for keyword in catalog.get_keywords():
         print(f'{catalog.get_keyword_id(keyword)} {keyword}')

@@ -1,4 +1,6 @@
+import json
 import os
+from pathlib import Path
 from typing import Optional
 
 from azure.cognitiveservices.vision.computervision import ComputerVisionClient
@@ -12,7 +14,7 @@ class Vision:
         self.vision_client = ComputerVisionClient(endpoint, CognitiveServicesCredentials(subscription_key))
         self.save_response = False
 
-    def parse_image(self, filename) -> Optional[ImageAnalysis]:
+    def parse_image(self, filename, save_response: bool = False) -> Optional[ImageAnalysis]:
         if os.path.exists(filename):
             image = open(filename, "rb")
             # "Categories", "Tags", "Description","ImageType", "Color", "Objects","Brands"
@@ -22,5 +24,12 @@ class Vision:
                                                                                      "Description", "Brands"],
                                                                                     ["Celebrities", "Landmarks"],
                                                                                     raw=True)
+            if save_response:
+                file_name = Path(filename).with_suffix('.dump')
+                file = open(file_name, "w")
+                parsed = json.loads(analyze.response.content)
+                file.write(json.dumps(parsed, indent=4, sort_keys=True))
+                file.close()
+
             return analyze.output
         return None
