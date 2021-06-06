@@ -1,24 +1,29 @@
 #!/usr/bin/env python3
 
 import config
+from limiter import Limiter
 
 from lrcat import LRCatalog
 from vision import Vision
 
 if __name__ == '__main__':
     catalog = LRCatalog(config.CATALOG, config.ALTERNATEROOT)
-    vision = Vision(config.endpoint, config.subscription_key)
+    vision = Vision(config.ENDPOINT, config.SUBSCRIPTION_KEY)
+    limiter = Limiter(10, 60)
     for image in catalog.get_all_image():
         if not image.has_keyword("Visioned"):
             if image.file_format == "JPG":
                 result = vision.parse_image(image.get_file_path(), True)
+                limiter.process()
             elif image.file_format == "RAW":
                 filename = catalog.get_converted_root_path(image.root_path) + image.path + image.base_name + ".jpg"
                 result = vision.parse_image(filename, True)
+                limiter.process()
             else:
                 print(f"Skip file:{image.get_file_path()}")
                 result = None
             if result is not None:
+                print(f'Processed:{image.id}')
                 image.set_caption(result.description.captions[0].text)
                 for tag in result.description.tags:
                     image.set_keyword(tag)
@@ -37,3 +42,5 @@ if __name__ == '__main__':
 
                 image.set_keyword("Visioned")
     print("Done")
+    print(f'Processed:{limiter.count}')
+    print(f'Avg:{limiter.avg}s')
