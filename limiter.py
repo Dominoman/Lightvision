@@ -9,6 +9,7 @@ class Limiter:
         self.count = 0
         self.time = datetime.timestamp(datetime.now())
         self.working_time = 0
+        self.waiting_time = 0
         self.avg = 0
 
     def process(self) -> None:
@@ -18,5 +19,6 @@ class Limiter:
         self.avg = (self.working_time+dx) / self.count
         if self.count % self.limit_count == 0 and dx < self.seconds:
             sleep(self.seconds - dx)
+            self.waiting_time += self.seconds-dx
             self.working_time += dx
             self.time = datetime.timestamp(datetime.now())

@@ -44,3 +44,4 @@ if __name__ == '__main__':
     print("Done")
     print(f'Processed:{limiter.count}')
     print(f'Avg:{limiter.avg}s')
+    print(f'Wait:{limiter.waiting_time}')
