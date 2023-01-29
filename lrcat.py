@@ -24,9 +24,7 @@ class Image:
         param = (self.id,)
         cur.execute("select caption from AgLibraryIPTC where image=?", param)
         result = cur.fetchone()
-        if result[0] is None:
-            return ""
-        return result[0]
+        return "" if result[0] is None else result[0]
 
     def set_caption(self, caption: str) -> None:
         cur = self.catalog.con.cursor()
@@ -52,21 +50,19 @@ where image=? and name=?""", param)
         return result[0] != 0
 
     def set_keyword(self, keyword: str, is_person: bool = False) -> None:
-        if not self.has_keyword(keyword):
-            keyword_id = self.catalog.get_keyword_id(keyword)
-            if keyword_id == -1:
-                if is_person:
-                    keyword_type = "person"
-                else:
-                    keyword_type = None
-                keyword_id = self.catalog.create_new_keyword(keyword, keyword_type)
-            param = (self.catalog.get_max_id() + 1, self.id, keyword_id)
-            cur = self.catalog.con.cursor()
-            cur.execute("insert into AgLibraryKeywordImage values (?,?,?)", param)
-            timestamp = LRCatalog.convert_datetime_to_lrtimestamp()
-            param = (timestamp, keyword_id)
-            cur.execute("update AgLibraryKeyword set lastApplied=? where id_local=?", param)
-            cur.connection.commit()
+        if self.has_keyword(keyword):
+            return
+        keyword_id = self.catalog.get_keyword_id(keyword)
+        if keyword_id == -1:
+            keyword_type = "person" if is_person else None
+            keyword_id = self.catalog.create_new_keyword(keyword, keyword_type)
+        param = (self.catalog.get_max_id() + 1, self.id, keyword_id)
+        cur = self.catalog.con.cursor()
+        cur.execute("insert into AgLibraryKeywordImage values (?,?,?)", param)
+        timestamp = LRCatalog.convert_datetime_to_lrtimestamp()
+        param = (timestamp, keyword_id)
+        cur.execute("update AgLibraryKeyword set lastApplied=? where id_local=?", param)
+        cur.connection.commit()
 
     def remove_keyword(self, keyword: str, remove_if_not_used: bool = False):
         cur = self.catalog.con.cursor()
@@ -87,7 +83,9 @@ where image=? and name=?""", param)
 
 
 class LRCatalog:
-    def __init__(self, path: str, root_dictionary: dict = {}) -> None:
+    def __init__(self, path: str, root_dictionary: dict = None) -> None:
+        if root_dictionary is None:
+            root_dictionary = {}
         self.con = sqlite3.connect(path)
         self.root_dictionary = root_dictionary
 
@@ -100,7 +98,7 @@ class LRCatalog:
             result = cur1.fetchone()
             if result[0] > 0:
                 cur2 = self.con.cursor()
-                cur2.execute("select max(id_local) from " + table[0])
+                cur2.execute(f"select max(id_local) from {table[0]}")
                 result = cur2.fetchone()
                 if result[0] is not None:
                     max_id = max(max_id, result[0])
@@ -131,12 +129,10 @@ left join AgLibraryRootFolder on AgLibraryFolder.rootFolder=AgLibraryRootFolder.
 
     def get_keyword_id(self, keyword: str) -> int:
         cur = self.con.cursor()
-        param = (keyword,)
-        cur.execute("select id_local from AgLibraryKeyword where name=?", param)
+        param = (keyword.lower(),)
+        cur.execute("select id_local from AgLibraryKeyword where lc_name=?", param)
         result = cur.fetchone()
-        if result is None:
-            return -1
-        return result[0]
+        return -1 if result is None else result[0]
 
     def create_new_keyword(self, keyword: str, keyword_type: str = None, exportable: int = 1) -> int:
         cur = self.con.cursor()
