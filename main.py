@@ -23,7 +23,7 @@ if __name__ == '__main__':
                 print(f"Skip file:{image.get_file_path()}")
                 result = None
             if result is not None:
-                print(f'Processed:{image.id}')
+                print(f'Processed:{image.path}\\{image.base_name}-{result.description.captions[0].text}')
                 image.set_caption(result.description.captions[0].text)
                 for tag in result.description.tags:
                     image.set_keyword(tag)

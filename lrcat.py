@@ -81,11 +81,15 @@ where image=? and name=?""", param)
                 cur.execute("delete from AgLibraryKeyword where id_local=?", param)
                 cur.connection.commit()
 
+    def __str__(self):
+        return f"Image:{self.base_name}"
+
 
 class LRCatalog:
     def __init__(self, path: str, root_dictionary: dict = None) -> None:
         if root_dictionary is None:
             root_dictionary = {}
+        self.path=path
         self.con = sqlite3.connect(path)
         self.root_dictionary = root_dictionary
 
@@ -172,3 +176,9 @@ left join AgLibraryRootFolder on AgLibraryFolder.rootFolder=AgLibraryRootFolder.
     @staticmethod
     def create_genealogy(parent_id: int, keyword_id: int) -> str:
         return f'/{len(str(parent_id))}{parent_id}/{len(str(keyword_id))}{keyword_id}'
+
+    def __repr__(self):
+        return f"LRCatalog({self.path})"
+
+
+

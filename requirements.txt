@@ -1,3 +1,4 @@
 msrest>=0.6.21
 pytz>=2021.1
-Pillow~=9.4.0
+pillow~=11.1.0
+azure-core~=1.32.0

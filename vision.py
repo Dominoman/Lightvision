@@ -27,11 +27,15 @@ class Vision:
             image = open(filename, "rb")
         # "Categories", "Tags", "Description","ImageType", "Color", "Objects","Brands"
         # "Celebrities", "Landmarks"
-        analyze: ClientRawResponse = self.vision_client.analyze_image_in_stream(image,
-                                                                                ["Categories", "Tags",
-                                                                                 "Description", "Brands"],
-                                                                                ["Landmarks"],
-                                                                                raw=True)
+        try:
+            analyze: ClientRawResponse = self.vision_client.analyze_image_in_stream(image,
+                                                                                    ["Categories", "Tags",
+                                                                                     "Description", "Brands"],
+                                                                                    ["Landmarks"],
+                                                                                    raw=True)
+        except Exception as e:
+            print(e)
+            return
         if save_response:
             file_name = Path(filename).with_suffix('.dump')
             with open(file_name, "w") as file:
